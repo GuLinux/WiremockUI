@@ -20,7 +20,6 @@ QUrl requestsURL(const Settings &settings, int64_t since=0) {
 
 Wiremock::Wiremock(Settings &settings) : settings{settings}
 {
-
 }
 
 Wiremock::Requests Wiremock::requests() const
@@ -45,8 +44,11 @@ void Wiremock::requestsReceived(QNetworkReply *reply)
     }
     auto body = QJsonDocument::fromJson(reply->readAll());
 
-    QVariantList requests = body.toVariant().toMap()["requests"].toList();
-    qDebug() << reply->url() << reply->errorString() << reply->rawHeaderList();
+    QVariantList requests_variants = body.toVariant().toMap()["requests"].toList();
+    Requests requests;
+    std::transform(requests_variants.begin(), requests_variants.end(), back_inserter(requests), [](QVariant v) { return Request::from(v.toMap()); });
+    sort(requests.begin(), requests.end(), [](const Request &a, const Request &b) { return a.loggedDate < b.loggedDate; });
+    cache().requests.append(requests);
 }
 
 Wiremock::Cache &Wiremock::cache()
@@ -59,6 +61,34 @@ Wiremock::Cache &Wiremock::cache()
 
 Wiremock::Request Wiremock::Request::from(const QVariantMap &value)
 {
+    auto response = value["response"].toMap();
+    return {
+        value["url"].toString(),
+        value["url"].toString(),
+        value["absoluteUrl"].toUrl(),        
+        value["method"].toString(),
+        value["clientIp"].toString(),
+        value["headers"].toMap(),
+        value["cookies"].toMap(),
+        value["browserProxyRequest"].toBool(),
+        static_cast<uint64_t>(value["loggedDate"].toLongLong()),
+        value["bodyAsBase64"].toString(),
+        value["body"].toByteArray(),
+        value["loggedDateString"].toString(),
+        value["queryParams"].toMap(),
+        value["responseDefinition"].toMap(),
+        {
+            static_cast<int16_t>(response["status"].toInt()),
+            response["headers"].toMap(),
+            response["bodyAsBase64"].toString(),
+            response["body"].toByteArray(),
+        },
+        value["wasMatched"].toBool(),
+        value["stubMapping"].toMap(),
+    };
+
+//    bool wasMatched;
+//    QVariantMap stubMapping;
 
 }
 

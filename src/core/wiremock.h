@@ -38,8 +38,8 @@ struct Wiremock::Request {
     QUrl absoluteUrl;
     QString method;
     QString clientIp;
-    QMap<QString, QString> headers;
-    QMap<QString, QString> cookies;
+    QVariantMap headers;
+    QVariantMap cookies;
     bool browserProxyRequest;
     uint64_t loggedDate;
     QString bodyAsBase64;
@@ -49,7 +49,7 @@ struct Wiremock::Request {
     QVariantMap responseDefinition;
     struct {
         int16_t status;
-        QMap<QString, QString> headers;
+        QVariantMap headers;
         QString bodyAsBase64;
         QByteArray body;
     } response;
