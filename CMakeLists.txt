@@ -3,12 +3,12 @@ project(WiremockUI)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_CXX_STANDARD 14)
+
 
 find_package(Qt5Widgets REQUIRED)
 find_package(Qt5Network REQUIRED)
+include_directories(${Qt5Widgets_INCLUDE_DIRS} ${Qt5Network_INCLUDE_DIRS} src)
+add_subdirectory(src)
 
-set(WiremockUI_SRCS main.cpp mainwindow.cpp mainwindow.ui requestspage.cpp requestspage.ui settings.cpp wiremock.cpp)
-
-add_executable(WiremockUI ${WiremockUI_SRCS})
-target_link_libraries(WiremockUI Qt5::Widgets Qt5::Network)
 

@@ -2,7 +2,7 @@
 #include "ui_mainwindow.h"
 #include <QDebug>
 #include <QInputDialog>
-#include "wiremock.h"
+#include "core/wiremock.h"
 
 using namespace std;
 

@@ -2,7 +2,7 @@
 #define REQUESTSPAGE_H
 
 #include <QWidget>
-#include "wiremock.h"
+#include "core/wiremock.h"
 #include <QTimer>
 
 namespace Ui {

@@ -2,7 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "settings.h"
+#include "core/settings.h"
 #include <memory>
 
 namespace Ui {
