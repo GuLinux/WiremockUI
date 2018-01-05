@@ -30,7 +30,7 @@ brew install cmake qt
 
 Go to the sources directory:
 ```
-cd wiremock-ui
+cd WiremockUI
 ```
 
 Create the build directory, and go inside it:
@@ -41,8 +41,10 @@ cd build
 
 Run `cmake` to configure the build:
 ```
-cmake ..
+cmake .. -DCMAKE_PREFIX_PATH=/usr/local/opt/qt5
 ```
+**note** your Qt installation path may vary.
+
 
 Finally run `make` to start compilation:
 ```
