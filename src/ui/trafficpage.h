@@ -10,17 +10,23 @@ class RequestsPage;
 }
 
 class QTimer;
-class RequestsPage : public QWidget
+class QStandardItemModel;
+class TrafficPage : public QWidget
 {
     Q_OBJECT
 public:
-    explicit RequestsPage(QWidget *parent = 0);
-    ~RequestsPage();
-    inline void setWiremock(const Wiremock::ptr &wiremock) { this->_wiremock = wiremock; }
+    explicit TrafficPage(QWidget *parent = 0);
+    ~TrafficPage();
+    void setWiremock(const Wiremock::ptr &wiremock);
+    void showItem(const Wiremock::Request &request);
+public slots:
+    void clear();
 private:
     Ui::RequestsPage *ui;
     QTimer _refreshTimer;
     Wiremock::ptr _wiremock;
+    QStandardItemModel *requestsModel;
+
 };
 
 #endif // REQUESTSPAGE_H

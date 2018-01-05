@@ -13,26 +13,29 @@ class Wiremock : public QObject
     Q_OBJECT
 public:
     typedef std::shared_ptr<Wiremock> ptr;
-    Wiremock(Settings &settings);
+    Wiremock(Settings *settings);
     struct Request;
     struct Cache;
     typedef QList<Request> Requests;
-    Requests requests() const;
+    Request request(const QString &id) const;
 public slots:
     void queryRequests();
+    void clearRequests();
 private slots:
     void requestsReceived(QNetworkReply *reply);
 signals:
-    void requestsUpdated();
+    void requestsCleared();
+    void requestsAdded(const Requests &requests);
 private:
-    Settings &settings;
-    QNetworkAccessManager client;
-    QMap<QUrl, Cache> _cache;
-    Cache &cache();
+    QNetworkAccessManager* client;
+    mutable QMap<QUrl, Cache> _cache;
+    Cache &cache() const;
+    Settings *settings;
 };
 
 struct Wiremock::Request {
     static Wiremock::Request from(const QVariantMap &value);
+    QVariantMap wiremock_data;
     QString id;
     QString url;
     QUrl absoluteUrl;
@@ -42,7 +45,6 @@ struct Wiremock::Request {
     QVariantMap cookies;
     bool browserProxyRequest;
     uint64_t loggedDate;
-    QString bodyAsBase64;
     QByteArray body;
     QString loggedDateString;
     QVariantMap queryParams;
@@ -50,7 +52,6 @@ struct Wiremock::Request {
     struct {
         int16_t status;
         QVariantMap headers;
-        QString bodyAsBase64;
         QByteArray body;
     } response;
     bool wasMatched;

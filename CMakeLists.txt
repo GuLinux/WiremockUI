@@ -11,4 +11,4 @@ find_package(Qt5Network REQUIRED)
 include_directories(${Qt5Widgets_INCLUDE_DIRS} ${Qt5Network_INCLUDE_DIRS} src)
 add_subdirectory(src)
 
-
+#include(packaging.cmake)

@@ -1,1 +1,11 @@
-add_library(ui STATIC mainwindow.cpp mainwindow.ui requestspage.cpp requestspage.ui)
+set(ui_SRCS
+    mainwindow.cpp
+    mainwindow.ui
+    trafficpage.cpp
+    trafficpage.ui
+    mappingspage.cpp
+    mappingspage.ui
+    bodyviewer.cpp
+    )
+
+add_library(ui STATIC ${ui_SRCS})

@@ -6,20 +6,28 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>869</width>
-    <height>651</height>
+    <width>1526</width>
+    <height>939</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Wiremock UI</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
      <widget class="QTabWidget" name="tabWidget">
-      <widget class="RequestsPage" name="requests">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="TrafficPage" name="traffic">
        <attribute name="title">
-        <string>Requests</string>
+        <string>HTTP Traffic</string>
+       </attribute>
+      </widget>
+      <widget class="MappingsPage" name="mappings">
+       <attribute name="title">
+        <string>Mappings</string>
        </attribute>
       </widget>
      </widget>
@@ -31,7 +39,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>869</width>
+     <width>1526</width>
      <height>22</height>
     </rect>
    </property>
@@ -41,6 +49,14 @@
     </property>
     <addaction name="actionServer_address"/>
    </widget>
+   <widget class="QMenu" name="menuRequests">
+    <property name="title">
+     <string>Traffic</string>
+    </property>
+    <addaction name="actionClear"/>
+    <addaction name="actionClear_on_Wiremock"/>
+   </widget>
+   <addaction name="menuRequests"/>
    <addaction name="menuSettings"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
@@ -57,13 +73,29 @@
     <string>Server address</string>
    </property>
   </action>
+  <action name="actionClear">
+   <property name="text">
+    <string>Clear</string>
+   </property>
+  </action>
+  <action name="actionClear_on_Wiremock">
+   <property name="text">
+    <string>Clear on Wiremock</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
   <customwidget>
-   <class>RequestsPage</class>
+   <class>TrafficPage</class>
    <extends>QWidget</extends>
-   <header>requestspage.h</header>
+   <header>trafficpage.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>MappingsPage</class>
+   <extends>QWidget</extends>
+   <header>mappingspage.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

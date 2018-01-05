@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include "core/settings.h"
 #include <memory>
+#include "core/wiremock.h"
 
 namespace Ui {
 class MainWindow;
@@ -17,14 +18,14 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
-
 private:
     Ui::MainWindow *ui;
-    Settings _settings;
-    std::shared_ptr<Wiremock> wiremock;
-
-public slots:
-    void setServerAddress();
+    Settings *settings;
+    Wiremock::ptr wiremock;
+private slots:
+    void on_actionClear_triggered();
+    void on_actionServer_address_triggered();
+    void on_actionClear_on_Wiremock_triggered();
 };
 
 #endif // MAINWINDOW_H
