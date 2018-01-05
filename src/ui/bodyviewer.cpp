@@ -18,6 +18,8 @@
 #include <QPixmap>
 #include <QImageReader>
 #include <QBuffer>
+#include <QActionGroup>
+
 #include "core/settings.h"
 
 using namespace std;
@@ -39,9 +41,17 @@ BodyViewer::BodyViewer(QWidget *parent) :
     imageView->setScaledContents(true);
     auto toolbar = new QToolBar();
 
+    QActionGroup *displayActions = new QActionGroup(this);
+
     actionHex = toolbar->addAction(tr("Hex"), [this](bool enabled) { if(enabled && mode != Hex) setMode(Hex); });
     actionText = toolbar->addAction(tr("Text"), [this](bool enabled) { if(enabled && mode != Text) setMode(Text); });
     actionImage = toolbar->addAction(tr("Image"), [this](bool enabled) { if(enabled && mode != Image) setMode(Image); });
+
+    displayActions->setExclusive(true);
+    displayActions->addAction(actionHex);
+    displayActions->addAction(actionImage);
+    displayActions->addAction(actionText);
+
     toolbar->addSeparator();
     actionSave = toolbar->addAction(tr("Save"), this, &BodyViewer::save);
 
