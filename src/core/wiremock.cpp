@@ -8,6 +8,7 @@
 #include "utils/utils.h"
 #include <QTimer>
 #include <QDateTime>
+#include <QCryptographicHash>
 
 using namespace std;
 
@@ -31,12 +32,18 @@ QUrl clearRequestsURL(Settings *settings) {
     url.setPath("/__admin/requests");
     return url;
 }
+QUrl getMappingsURL(Settings *settings) {
+    QUrl url = settings->server_address();
+    url.setPath("/__admin/mappings");
+    return url;
+}
 }
 
 Wiremock::Wiremock(Settings *settings) : settings{settings}
 {
     client = new QNetworkAccessManager(this);
     QTimer::singleShot(1000, this, &Wiremock::queryRequests);
+    QTimer::singleShot(1000, this, &Wiremock::queryMappings);
 }
 
 Wiremock::Request Wiremock::request(const QString &id) const
@@ -55,6 +62,16 @@ void Wiremock::queryRequests()
     auto reply = client->get(QNetworkRequest{url});
     connect(reply, &QNetworkReply::finished, this, [this, reply] {
         requestsReceived(reply);
+    });
+}
+
+void Wiremock::queryMappings()
+{
+    auto url = getMappingsURL(settings);
+    qDebug() << "querying url:" << url;
+    auto reply = client->get(QNetworkRequest{url});
+    connect(reply, &QNetworkReply::finished, this, [this, reply] {
+        mappingsReceived(reply);
     });
 }
 
@@ -96,6 +113,36 @@ void Wiremock::requestsReceived(QNetworkReply *reply)
             emit requestsAdded(requests);
         }
         qDebug() << "fetched" << requests.length() << "requests.";
+    }
+}
+
+void Wiremock::mappingsReceived(QNetworkReply *reply)
+{
+    Scope on_exit{ [this, reply]{
+            reply->deleteLater();
+            QTimer::singleShot(1000, this, &Wiremock::queryMappings);
+        }};
+    Q_UNUSED(on_exit);
+    if(reply->error() != QNetworkReply::NoError) {
+        qWarning() << "Error fetching mappings from" << reply->url() << ":" << reply->errorString();
+    } else {
+        auto body = QJsonDocument::fromJson(reply->readAll());
+
+        QVariantList mappings_variants = body.toVariant().toMap()["mappings"].toList();
+        Mappings mappings;
+        transform(mappings_variants.begin(), mappings_variants.end(), back_inserter(mappings), [](QVariant v) { return Mapping::from(v.toMap()); });
+        qDebug() << "fetched" << mappings.length() << "requests.";
+        if(mappings.size() == 0) {
+            return;
+        }
+        Mappings added, removed;
+        Mappings &cached = cache().mappings;
+        auto compare_mappings = [](const Mapping &a, const Mapping &b) { return a.id < b.id; };
+        set_difference(mappings.begin(), mappings.end(), cached.begin(), cached.end(), back_inserter(added), compare_mappings);
+        set_difference(cached.begin(), cached.end(), mappings.begin(), mappings.end(), back_inserter(removed), compare_mappings);
+        emit mappingsAdded(added);
+        emit mappingsRemoved(removed);
+        cache().mappings = mappings;
     }
 }
 
@@ -144,4 +191,27 @@ uint64_t Wiremock::Cache::since() const
         return max->loggedDate;
     }
     return 0;
+}
+
+Wiremock::Mapping Wiremock::Mapping::from(const QVariantMap &value)
+{
+    auto response = value["response"].toMap();
+    auto request = value["request"].toMap();
+    return {
+        value,
+        value["priority"].toInt(),
+        value["id"].toString(),
+        request,
+        response,
+    };
+}
+
+QByteArray Wiremock::Mapping::checksum() const
+{
+    if(sha1.isEmpty()) {
+        QCryptographicHash crypto(QCryptographicHash::Sha1);
+        crypto.addData(QJsonDocument::fromVariant(wiremock_data).toBinaryData());
+        sha1 = crypto.result();
+    }
+    return sha1;
 }

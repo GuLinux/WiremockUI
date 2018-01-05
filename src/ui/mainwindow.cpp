@@ -13,6 +13,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     ui->traffic->setWiremock(this->wiremock);
+    ui->mappings->setWiremock(this->wiremock);
     if(!settings->geometry().isEmpty())
         restoreGeometry(settings->geometry());
     if(!settings->state().isEmpty())

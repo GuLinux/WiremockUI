@@ -15,17 +15,23 @@ public:
     typedef std::shared_ptr<Wiremock> ptr;
     Wiremock(Settings *settings);
     struct Request;
+    struct Mapping;
+    typedef QList<Mapping> Mappings;
     struct Cache;
     typedef QList<Request> Requests;
     Request request(const QString &id) const;
 public slots:
     void queryRequests();
+    void queryMappings();
     void clearRequests();
 private slots:
     void requestsReceived(QNetworkReply *reply);
+    void mappingsReceived(QNetworkReply *reply);
 signals:
     void requestsCleared();
     void requestsAdded(const Requests &requests);
+    void mappingsAdded(const Mappings &mappings);
+    void mappingsRemoved(const Mappings &mappings);
 private:
     QNetworkAccessManager* client;
     mutable QMap<QUrl, Cache> _cache;
@@ -34,7 +40,7 @@ private:
 };
 
 struct Wiremock::Request {
-    static Wiremock::Request from(const QVariantMap &value);
+    static Request from(const QVariantMap &value);
     QVariantMap wiremock_data;
     QString id;
     QString url;
@@ -58,8 +64,21 @@ struct Wiremock::Request {
     QVariantMap stubMapping;
 };
 
+// TODO: since Mapping structure seems to be more dynamic than Request/Response, is it worth doing parsing of a domain structure?
+struct Wiremock::Mapping {
+    static Mapping from(const QVariantMap &value);
+    QVariantMap wiremock_data;
+    int priority;
+    QString id;
+    QVariantMap request;
+    QVariantMap response;
+    QByteArray checksum() const;
+    mutable QByteArray sha1 = {};
+};
+
 struct Wiremock::Cache {
     Requests requests;
+    Mappings mappings;
     uint64_t since() const;
 };
 #endif // WIREMOCK_H
