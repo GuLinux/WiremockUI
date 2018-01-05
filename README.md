@@ -41,10 +41,10 @@ cd build
 
 Run `cmake` to configure the build:
 ```
-cmake .. -DCMAKE_PREFIX_PATH=/usr/local/Cellar/qt5/5.10.0_1
+cmake .. -DCMAKE_PREFIX_PATH=/usr/local/opt/qt5
 ```
-**note**: `/usr/local/Cellar/qt5/5.10.0_1` depends on the Qt version you just installed with brew, and might change over time.
-Please do an `ls /usr/local/Cellar/qt5/` to find out your installed Qt version.
+**note** your Qt installation path may vary.
+
 
 Finally run `make` to start compilation:
 ```
