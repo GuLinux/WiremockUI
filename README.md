@@ -30,7 +30,7 @@ brew install cmake qt
 
 Go to the sources directory:
 ```
-cd wiremock-ui
+cd WiremockUI
 ```
 
 Create the build directory, and go inside it:
