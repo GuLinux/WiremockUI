@@ -9,6 +9,7 @@
 #include <QTimer>
 #include <QDateTime>
 #include <QCryptographicHash>
+#include <QUuid>
 
 using namespace std;
 
@@ -32,9 +33,12 @@ QUrl clearRequestsURL(Settings *settings) {
     url.setPath("/__admin/requests");
     return url;
 }
-QUrl getMappingsURL(Settings *settings) {
+QUrl getMappingsURL(Settings *settings, const QString id={}) {
     QUrl url = settings->server_address();
-    url.setPath("/__admin/mappings");
+    QString path{"/__admin/mappings"};
+    if(!id.isEmpty())
+        path += "/" + id;
+    url.setPath(path);
     return url;
 }
 }
@@ -53,6 +57,26 @@ Wiremock::Request Wiremock::request(const QString &id) const
         return *request_it;
     qDebug() << "Request with id" << id << "not found";
     return {};
+}
+
+Wiremock::Mapping Wiremock::mapping(const QString &checksum) const
+{
+    auto mapping_it = find_if(cache().mappings.begin(), cache().mappings.end(), [checksum](const Mapping &m) { return m.checksum() == checksum; });
+    if(mapping_it != cache().mappings.end())
+        return *mapping_it;
+    qDebug() << "Mapping with checksum" << checksum << "not found";
+    return {};
+}
+
+QString Wiremock::createMappingUUID()
+{
+    QStringList current_uuids;
+    transform(cache().mappings.begin(), cache().mappings.end(), back_inserter(current_uuids), [](const Mapping &m) { return m.id; });
+    while(true) {
+        auto uuid = QUuid::createUuid().toString();
+        if(! current_uuids.contains(uuid))
+            return uuid;
+    }
 }
 
 void Wiremock::queryRequests()
@@ -89,6 +113,46 @@ void Wiremock::clearRequests()
         } else {
             emit requestsCleared();
         }
+    });
+}
+
+void Wiremock::addMapping(QVariantMap mapping)
+{
+    auto id = mapping.value("id", mapping.value("uuid")).toString();
+    if(id.isEmpty())
+        id = createMappingUUID();
+    mapping["id"] = id;
+    mapping["uuid"] = id;
+    QNetworkRequest request{getMappingsURL(settings)};
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    auto reply = client->post(request, QJsonDocument::fromVariant(mapping).toJson());
+    connect(reply, &QNetworkReply::finished, this, [this, reply] {
+        // TODO: notify UI if failed
+        reply->deleteLater();
+    });
+}
+
+void Wiremock::removeMapping(const QString &id)
+{
+    if(id.isEmpty()) {
+        qWarning() << "Trying to remove mapping with empty ID. Clear instead, if you want to remove all mappings.";
+        return;
+    }
+    auto request = QNetworkRequest{getMappingsURL(settings, id)};
+    auto reply = client->sendCustomRequest(request, "DELETE");
+    connect(reply, &QNetworkReply::finished, this, [this, reply] {
+        // TODO: notify UI if failed
+        reply->deleteLater();
+    });
+}
+
+void Wiremock::clearMappings()
+{
+    auto request = QNetworkRequest{getMappingsURL(settings)};
+    auto reply = client->sendCustomRequest(request, "DELETE");
+    connect(reply, &QNetworkReply::finished, this, [this, reply] {
+        // TODO: notify UI if failed
+        reply->deleteLater();
     });
 }
 
@@ -131,13 +195,10 @@ void Wiremock::mappingsReceived(QNetworkReply *reply)
         QVariantList mappings_variants = body.toVariant().toMap()["mappings"].toList();
         Mappings mappings;
         transform(mappings_variants.begin(), mappings_variants.end(), back_inserter(mappings), [](QVariant v) { return Mapping::from(v.toMap()); });
-        qDebug() << "fetched" << mappings.length() << "requests.";
-        if(mappings.size() == 0) {
-            return;
-        }
+        qDebug() << "fetched" << mappings.length() << "mappings.";
         Mappings added, removed;
         Mappings &cached = cache().mappings;
-        auto compare_mappings = [](const Mapping &a, const Mapping &b) { return a.id < b.id; };
+        auto compare_mappings = [](const Mapping &a, const Mapping &b) { return a.checksum() < b.checksum(); };
         set_difference(mappings.begin(), mappings.end(), cached.begin(), cached.end(), back_inserter(added), compare_mappings);
         set_difference(cached.begin(), cached.end(), mappings.begin(), mappings.end(), back_inserter(removed), compare_mappings);
         emit mappingsAdded(added);
@@ -197,13 +258,19 @@ Wiremock::Mapping Wiremock::Mapping::from(const QVariantMap &value)
 {
     auto response = value["response"].toMap();
     auto request = value["request"].toMap();
-    return {
+    QString id = value.value("id").toString();
+    if(id.isEmpty())
+        id = value.value("uuid").toString();
+    Mapping mapping {
+        true,
         value,
         value["priority"].toInt(),
-        value["id"].toString(),
+        id,
         request,
         response,
     };
+    mapping.checksum();
+    return mapping;
 }
 
 QByteArray Wiremock::Mapping::checksum() const

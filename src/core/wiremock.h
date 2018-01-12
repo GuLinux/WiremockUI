@@ -20,10 +20,15 @@ public:
     struct Cache;
     typedef QList<Request> Requests;
     Request request(const QString &id) const;
+    Mapping mapping(const QString &checksum) const;
+    QString createMappingUUID();
 public slots:
     void queryRequests();
     void queryMappings();
     void clearRequests();
+    void addMapping(QVariantMap mapping);
+    void removeMapping(const QString &id);
+    void clearMappings();
 private slots:
     void requestsReceived(QNetworkReply *reply);
     void mappingsReceived(QNetworkReply *reply);
@@ -67,6 +72,7 @@ struct Wiremock::Request {
 // TODO: since Mapping structure seems to be more dynamic than Request/Response, is it worth doing parsing of a domain structure?
 struct Wiremock::Mapping {
     static Mapping from(const QVariantMap &value);
+    bool valid = false;
     QVariantMap wiremock_data;
     int priority;
     QString id;

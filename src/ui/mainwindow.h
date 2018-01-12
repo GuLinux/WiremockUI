@@ -22,10 +22,12 @@ private:
     Ui::MainWindow *ui;
     Settings *settings;
     Wiremock::ptr wiremock;
+    QList<QToolBar *> tabToolbars;
 private slots:
     void on_actionClear_triggered();
     void on_actionServer_address_triggered();
     void on_actionClear_on_Wiremock_triggered();
+    void on_tabWidget_currentChanged(int index);
 };
 
 #endif // MAINWINDOW_H

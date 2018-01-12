@@ -6,6 +6,8 @@ set(ui_SRCS
     mappingspage.cpp
     mappingspage.ui
     bodyviewer.cpp
+    addeditmapping.ui
+    addeditmapping.cpp
     )
 
 add_library(ui STATIC ${ui_SRCS})

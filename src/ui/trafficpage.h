@@ -4,6 +4,7 @@
 #include <QWidget>
 #include "core/wiremock.h"
 #include <QTimer>
+#include "toolbarprovider.h"
 
 namespace Ui {
 class RequestsPage;
@@ -11,7 +12,7 @@ class RequestsPage;
 
 class QTimer;
 class QStandardItemModel;
-class TrafficPage : public QWidget
+class TrafficPage : public QWidget, public ToolbarProvider
 {
     Q_OBJECT
 public:
@@ -19,6 +20,7 @@ public:
     ~TrafficPage();
     void setWiremock(const Wiremock::ptr &wiremock);
     void showItem(const Wiremock::Request &request);
+    QList<QToolBar*> providedToolBars() const override;
 public slots:
     void clear();
 private:
@@ -26,6 +28,7 @@ private:
     QTimer _refreshTimer;
     Wiremock::ptr _wiremock;
     QStandardItemModel *requestsModel;
+    QToolBar *requeststToolbar;
 
 };
 

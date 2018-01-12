@@ -3,6 +3,8 @@
 #include <QStandardItemModel>
 #include <QJsonDocument>
 #include <QSyntaxHighlighter>
+#include <QToolBar>
+#include <QLabel>
 
 TrafficPage::TrafficPage(QWidget *parent) :
     QWidget(parent),
@@ -28,6 +30,9 @@ TrafficPage::TrafficPage(QWidget *parent) :
             showItem(_wiremock->request(request->data().toString()));
         }
     });
+    requeststToolbar = new QToolBar(tr("Requests"));
+    requeststToolbar->addWidget(new QLabel(tr("Requests")));
+    requeststToolbar->addAction(tr("Clear"), this, &TrafficPage::clear);
     clear();
     // TODO: nice to have: syntax highlight for request/response bodies
     // new QSyntaxHighlighter(ui->requestBody->document());
@@ -115,6 +120,11 @@ void TrafficPage::showItem(const Wiremock::Request &request)
     ui->responseView->setHtml(responseTemplate);
     ui->responseBody->setData(request.response.body, findContentType(request.response.headers));
     ui->requestJson->setText(QJsonDocument::fromVariant(request.wiremock_data).toJson(QJsonDocument::Indented));
+}
+
+QList<QToolBar *> TrafficPage::providedToolBars() const
+{
+    return {requeststToolbar};
 }
 
 void TrafficPage::clear()

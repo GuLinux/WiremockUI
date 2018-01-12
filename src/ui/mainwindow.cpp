@@ -18,6 +18,7 @@ MainWindow::MainWindow(QWidget *parent) :
         restoreGeometry(settings->geometry());
     if(!settings->state().isEmpty())
         restoreState(settings->state());
+    on_tabWidget_currentChanged(ui->tabWidget->currentIndex());
 }
 
 MainWindow::~MainWindow()
@@ -47,4 +48,20 @@ void MainWindow::on_actionServer_address_triggered()
 void MainWindow::on_actionClear_on_Wiremock_triggered()
 {
     wiremock->clearRequests();
+}
+
+void MainWindow::on_tabWidget_currentChanged(int index)
+{
+    for(auto toolbar: tabToolbars)
+        removeToolBar(toolbar);
+    tabToolbars = {};
+    ToolbarProvider *toolbarProvider = dynamic_cast<ToolbarProvider*>(ui->tabWidget->widget(index));
+    qDebug() << "toolbarProvider:" << static_cast<bool>(toolbarProvider);
+    if(toolbarProvider) {
+        tabToolbars = toolbarProvider->providedToolBars();
+        for(auto toolbar: tabToolbars) {
+            addToolBar(toolbar);
+            toolbar->setVisible(true);
+        }
+    }
 }
