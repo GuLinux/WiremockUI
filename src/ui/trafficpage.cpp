@@ -5,6 +5,57 @@
 #include <QSyntaxHighlighter>
 #include <QToolBar>
 #include <QLabel>
+#include <QSortFilterProxyModel>
+#include <QtQml/QJSEngine>
+#include <QElapsedTimer>
+#include <QMessageBox>
+
+using namespace std;
+class FunctionFilterModel : public QSortFilterProxyModel {
+    Q_OBJECT
+public:
+    typedef function<bool(int)> Filter;
+    FunctionFilterModel(QObject *parent = 0);
+    void setRowFilter(const Filter &filter);
+    void setColumnFilter(const Filter &filter);
+protected:
+    bool filterAcceptsColumn(int source_column, const QModelIndex &source_parent) const override;
+    bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override;
+private:
+    Filter filterRow;
+    Filter filterColumn;
+};
+
+FunctionFilterModel::FunctionFilterModel(QObject *parent) : QSortFilterProxyModel(parent), filterRow([](int){ return true; }), filterColumn([](int){return true;})
+{
+}
+
+void FunctionFilterModel::setRowFilter(const FunctionFilterModel::Filter &filter)
+{
+    beginResetModel();
+    filterRow = filter;
+    endResetModel();
+}
+
+void FunctionFilterModel::setColumnFilter(const FunctionFilterModel::Filter &filter)
+{
+    beginResetModel();
+    filterColumn = filter;
+    endResetModel();
+}
+
+
+bool FunctionFilterModel::filterAcceptsColumn(int source_column, const QModelIndex &source_parent) const
+{
+    return filterColumn(source_column);
+}
+
+bool FunctionFilterModel::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const
+{
+    return filterRow(source_row);
+}
+
+
 
 TrafficPage::TrafficPage(QWidget *parent) :
     QWidget(parent),
@@ -12,11 +63,14 @@ TrafficPage::TrafficPage(QWidget *parent) :
 {
     ui->setupUi(this);
     requestsModel = new QStandardItemModel(this);
+    filterModel = new FunctionFilterModel(this);
+    filterModel->setSourceModel(requestsModel);
 
-    ui->requests->setModel(requestsModel);
+    ui->requests->setModel(filterModel);
     connect(ui->requests->selectionModel(), &QItemSelectionModel::currentChanged, this,
             [this](const QModelIndex &current, const QModelIndex &){
-        auto request = requestsModel->itemFromIndex(current);
+        auto sourceIndex = filterModel->mapToSource(current);
+        auto request = requestsModel->itemFromIndex(sourceIndex);
         if(!current.isValid() || !request) {
             ui->requestView->clear();
             ui->responseView->clear();
@@ -27,13 +81,19 @@ TrafficPage::TrafficPage(QWidget *parent) :
                 qDebug() << "Empty id found";
                 return;
             }
-            showItem(_wiremock->request(request->data().toString()));
+            showItem(_wiremock->request(id));
         }
     });
     requeststToolbar = new QToolBar(tr("Requests"));
     requeststToolbar->addWidget(new QLabel(tr("Requests")));
     requeststToolbar->addAction(tr("Clear"), this, &TrafficPage::clear);
     clear();
+    connect(this, &TrafficPage::expressionError, this, [this](const QString &errorMessage, const QString failingJavascript){
+        if(this->failingJavascript != failingJavascript) {
+            this->failingJavascript = failingJavascript;
+            QMessageBox::critical(this, "Filter error", errorMessage);
+        }
+    });
     // TODO: nice to have: syntax highlight for request/response bodies
     // new QSyntaxHighlighter(ui->requestBody->document());
     // new QSyntaxHighlighter(ui->responseBody->document());
@@ -132,4 +192,39 @@ void TrafficPage::clear()
     requestsModel->clear();
     requestsModel->setColumnCount(3);
     requestsModel->setHorizontalHeaderLabels({tr("Time"), tr("Method"), tr("URL")});
+}
+
+#include "trafficpage.moc"
+
+
+void TrafficPage::on_requestsFilter_returnPressed()
+{
+    failingJavascript.clear();
+    auto expression = ui->requestsFilter->text();
+    filterModel->setRowFilter([this, expression] (int row) {
+        auto request = requestsModel->item(row);
+        if(!request)
+            return false;
+        auto id = request->data().toString();
+        if(id.isEmpty())
+            return false;
+        return check(expression, _wiremock->request(id));
+    });
+}
+
+bool TrafficPage::check(const QString expression, const Wiremock::Request &request)
+{
+    QJSEngine engine;
+    for(auto key: request.wiremock_data.keys())
+        engine.globalObject().setProperty(key, engine.toScriptValue(request.wiremock_data[key]));
+    auto result = engine.evaluate(expression);
+    if(result.isError()) {
+        emit expressionError(tr("Javascript expression error: %1").arg(result.toString()), expression);
+        return false;
+    }
+    if(!result.isBool()) {
+        emit expressionError(tr("Expression does not result in a boolean value: %1").arg(result.toString()), expression);
+        return false;
+    }
+    return result.toBool();
 }

@@ -8,7 +8,8 @@ set(CMAKE_CXX_STANDARD 14)
 
 find_package(Qt5Widgets REQUIRED)
 find_package(Qt5Network REQUIRED)
-include_directories(${Qt5Widgets_INCLUDE_DIRS} ${Qt5Network_INCLUDE_DIRS} src)
+find_package(Qt5Qml REQUIRED)
+include_directories(${Qt5Widgets_INCLUDE_DIRS} ${Qt5Network_INCLUDE_DIRS} ${Qt5Qml_INCLUDE_DIRS} src)
 add_subdirectory(src)
 
 #include(packaging.cmake)
