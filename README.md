@@ -58,3 +58,12 @@ You can now start the application:
 ```
 
 If you did run `make install`, the program will be available in the system path. just type `WiremockUI` in any terminal.
+
+#### Install on OSX using brew
+
+There is a brew formula available in the main repository.
+This hasn't been submitted yet to the main brew repositories, but you can install easly the application with the following command, after cloning the repository:
+```
+brew install --build-from-source --HEAD ./support/brew/wiremock-ui.rb
+```
+
