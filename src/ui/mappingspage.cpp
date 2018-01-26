@@ -67,6 +67,7 @@ void MappingsPage::showItem(const Wiremock::Mapping &mapping)
     if(!mapping.valid)
         return;
     ui->json->setText(QJsonDocument::fromVariant(mapping.wiremock_data).toJson(QJsonDocument::Indented));
+    ui->mappingView->setMapping(mapping);
 }
 
 void MappingsPage::onMappingSelected()
